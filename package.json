@@ -1,0 +1,61 @@
+{
+	"name": "directus-extension-msgraph-mail",
+	"version": "1.0.0",
+	"description": "Send all Directus emails via Microsoft Graph API with OAuth2 Client Credentials",
+	"keywords": [
+		"directus",
+		"directus-extension",
+		"directus-extension-bundle",
+		"microsoft-graph",
+		"email",
+		"mail",
+		"azure",
+		"office365"
+	],
+	"icon": "email",
+	"author": "CodeCrush",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/codecrush-ch/directus-extension-msgraph-mail.git"
+	},
+	"homepage": "https://github.com/codecrush-ch/directus-extension-msgraph-mail#readme",
+	"bugs": {
+		"url": "https://github.com/codecrush-ch/directus-extension-msgraph-mail/issues"
+	},
+	"directus:extension": {
+		"type": "bundle",
+		"host": "^10.10.0",
+		"path": {
+			"api": "dist/api.js",
+			"app": "dist/app.js"
+		},
+		"entries": [
+			{
+				"type": "hook",
+				"name": "msgraph-mail-hook",
+				"source": "src/hook/index.ts"
+			},
+			{
+				"type": "operation",
+				"name": "msgraph-send-mail",
+				"source": {
+					"api": "src/operation/api.ts",
+					"app": "src/operation/app.ts"
+				}
+			}
+		]
+	},
+	"scripts": {
+		"build": "directus-extension build",
+		"dev": "directus-extension build -w --no-minify",
+		"prepublishOnly": "npm run build"
+	},
+	"devDependencies": {
+		"@directus/extensions-sdk": "^12.0.0",
+		"typescript": "^5.4.0"
+	},
+	"files": [
+		"dist"
+	]
+}
