@@ -7,33 +7,34 @@ export default defineHook(({ filter }, { env, logger }) => {
 	const config = getConfigFromEnv(env as Record<string, string>);
 
 	if (!config) {
-		logger.warn('[msgraph-mail] Microsoft Graph nicht konfiguriert. MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID oder MSGRAPH_CLIENT_SECRET fehlt. Emails werden ueber den Standard-Transport gesendet.');
+		logger.warn('[msgraph-mail] Microsoft Graph not configured. MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID, MSGRAPH_CLIENT_SECRET, or sender email missing. Emails will be sent via default transport.');
 		return;
 	}
 
-	logger.info(`[msgraph-mail] Hook registriert. Emails werden via Graph API als ${config.senderEmail} gesendet.`);
+	logger.info(`[msgraph-mail] Hook registered. Emails will be sent via Graph API as ${config.senderEmail}.`);
 
 	filter('email.send', async (emailOptions: Record<string, any>) => {
 		const options = emailOptions as unknown as DirectusEmailOptions;
 
 		if (!options.to || (Array.isArray(options.to) && options.to.length === 0)) {
-			logger.warn('[msgraph-mail] Email ohne Empfaenger uebersprungen.');
+			logger.warn('[msgraph-mail] Email without recipient skipped.');
 			return emailOptions;
 		}
 
 		try {
-			const message = convertToGraphMessage(options);
+			const message = await convertToGraphMessage(options);
 
-			logger.debug(`[msgraph-mail] Sende Email an: ${JSON.stringify(options.to)}, Betreff: "${options.subject}"`);
+			logger.debug(`[msgraph-mail] Sending email to: ${JSON.stringify(options.to)}, Subject: "${options.subject}"`);
 
 			await sendMailViaGraph(config, message);
 
-			logger.info(`[msgraph-mail] Email erfolgreich gesendet an: ${JSON.stringify(options.to)}, Betreff: "${options.subject}"`);
+			logger.info(`[msgraph-mail] Email successfully sent to: ${JSON.stringify(options.to)}, Subject: "${options.subject}"`);
 		} catch (error: any) {
-			logger.error(`[msgraph-mail] Email-Versand fehlgeschlagen: ${error.message}`);
-			throw new Error(`[msgraph-mail] Graph API Fehler: ${error.message}`);
+			logger.error(`[msgraph-mail] Email sending failed: ${error.message}`);
+			throw new Error(`[msgraph-mail] Graph API error: ${error.message}`);
 		}
 
-		return emailOptions;
+		// Return false to prevent default email transport from also sending
+		return false;
 	});
 });

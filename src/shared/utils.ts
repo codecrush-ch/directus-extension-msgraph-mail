@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readFile } from 'fs/promises';
 import type { DirectusEmailOptions, GraphMessage, GraphRecipient, GraphAttachment, DirectusAttachment } from './types';
 
 export function parseRecipients(input: string | string[] | undefined): GraphRecipient[] {
@@ -18,10 +18,12 @@ export function parseRecipients(input: string | string[] | undefined): GraphReci
 	});
 }
 
-function convertAttachments(attachments?: DirectusAttachment[]): GraphAttachment[] | undefined {
+async function convertAttachments(attachments?: DirectusAttachment[]): Promise<GraphAttachment[] | undefined> {
 	if (!attachments || attachments.length === 0) return undefined;
 
-	return attachments.map((att) => {
+	const results: GraphAttachment[] = [];
+
+	for (const att of attachments) {
 		let contentBytes: string;
 
 		if (att.content) {
@@ -31,24 +33,26 @@ function convertAttachments(attachments?: DirectusAttachment[]): GraphAttachment
 				contentBytes = Buffer.from(att.content, (att.encoding as BufferEncoding) || 'utf-8').toString('base64');
 			}
 		} else if (att.path) {
-			const fileBuffer = readFileSync(att.path);
+			const fileBuffer = await readFile(att.path);
 			contentBytes = fileBuffer.toString('base64');
 		} else {
 			contentBytes = '';
 		}
 
-		return {
+		results.push({
 			'@odata.type': '#microsoft.graph.fileAttachment' as const,
 			name: att.filename,
 			contentType: att.contentType || 'application/octet-stream',
 			contentBytes,
-		};
-	});
+		});
+	}
+
+	return results;
 }
 
-export function convertToGraphMessage(options: DirectusEmailOptions): GraphMessage {
+export async function convertToGraphMessage(options: DirectusEmailOptions): Promise<GraphMessage> {
 	const message: GraphMessage = {
-		subject: options.subject || '(Kein Betreff)',
+		subject: options.subject || '(No subject)',
 		body: {
 			contentType: options.html ? 'HTML' : 'Text',
 			content: options.html || options.text || '',
@@ -66,7 +70,7 @@ export function convertToGraphMessage(options: DirectusEmailOptions): GraphMessa
 		message.bccRecipients = bcc;
 	}
 
-	const attachments = convertAttachments(options.attachments);
+	const attachments = await convertAttachments(options.attachments);
 	if (attachments) {
 		message.attachments = attachments;
 	}

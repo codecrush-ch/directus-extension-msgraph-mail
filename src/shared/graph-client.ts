@@ -25,7 +25,7 @@ async function acquireToken(config: MsGraphConfig): Promise<string> {
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		throw new Error(`Token-Akquise fehlgeschlagen (${response.status}): ${errorText}`);
+		throw new Error(`Token acquisition failed (${response.status}): ${errorText}`);
 	}
 
 	const data = (await response.json()) as { access_token: string; expires_in: number };
@@ -57,7 +57,7 @@ export async function sendMailViaGraph(config: MsGraphConfig, message: GraphMess
 
 	if (!response.ok) {
 		const errorBody = await response.text();
-		throw new Error(`Graph API sendMail fehlgeschlagen (${response.status}): ${errorBody}`);
+		throw new Error(`Graph API sendMail failed (${response.status}): ${errorBody}`);
 	}
 }
 

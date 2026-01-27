@@ -20,11 +20,11 @@ export default defineOperationApi<OperationOptions>({
 		const config = getConfigFromEnv(env as Record<string, string>);
 
 		if (!config) {
-			throw new Error('Microsoft Graph nicht konfiguriert. MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID und MSGRAPH_CLIENT_SECRET muessen gesetzt sein.');
+			throw new Error('Microsoft Graph not configured. MSGRAPH_TENANT_ID, MSGRAPH_CLIENT_ID, MSGRAPH_CLIENT_SECRET, and sender email must be set.');
 		}
 
 		if (!options.to || (Array.isArray(options.to) && options.to.length === 0)) {
-			throw new Error('Kein Empfaenger angegeben.');
+			throw new Error('No recipient specified.');
 		}
 
 		const emailOptions: DirectusEmailOptions = {
@@ -36,7 +36,7 @@ export default defineOperationApi<OperationOptions>({
 			text: options.type === 'text' ? options.body : undefined,
 		};
 
-		const message: GraphMessage = convertToGraphMessage(emailOptions);
+		const message: GraphMessage = await convertToGraphMessage(emailOptions);
 
 		if (options.importance && options.importance !== 'normal') {
 			message.importance = options.importance;
@@ -45,7 +45,7 @@ export default defineOperationApi<OperationOptions>({
 		try {
 			await sendMailViaGraph(config, message, options.saveToSentItems !== false);
 
-			logger.info(`[msgraph-send-mail] Email gesendet an: ${JSON.stringify(options.to)}, Betreff: "${options.subject}"`);
+			logger.info(`[msgraph-send-mail] Email sent to: ${JSON.stringify(options.to)}, Subject: "${options.subject}"`);
 
 			return {
 				success: true,
@@ -53,7 +53,7 @@ export default defineOperationApi<OperationOptions>({
 				subject: options.subject,
 			};
 		} catch (error: any) {
-			logger.error(`[msgraph-send-mail] Fehler: ${error.message}`);
+			logger.error(`[msgraph-send-mail] Error: ${error.message}`);
 			throw error;
 		}
 	},
