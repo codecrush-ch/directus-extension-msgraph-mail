@@ -26,6 +26,9 @@
 	"directus:extension": {
 		"type": "bundle",
 		"host": "^10.10.0",
+		"sandbox": {
+			"enabled": true
+		},
 		"path": {
 			"api": "dist/api.js",
 			"app": "dist/app.js"
