@@ -1,6 +1,6 @@
 {
 	"name": "directus-extension-msgraph-mail",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Send all Directus emails via Microsoft Graph API with OAuth2 Client Credentials",
 	"keywords": [
 		"directus",
