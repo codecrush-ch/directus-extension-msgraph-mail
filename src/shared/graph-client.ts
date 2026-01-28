@@ -1,4 +1,6 @@
-import type { MsGraphConfig, GraphMessage, TokenCache } from './types';
+/// <reference types="@directus/extensions/api.d.ts" />
+import { request } from 'directus:api';
+import type { GraphMessage, MsGraphConfig, TokenCache } from './types';
 
 let tokenCache: TokenCache | null = null;
 
@@ -17,18 +19,18 @@ async function acquireToken(config: MsGraphConfig): Promise<string> {
 		grant_type: 'client_credentials',
 	});
 
-	const response = await fetch(tokenEndpoint, {
+	const response = await request(tokenEndpoint, {
 		method: 'POST',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 		body: body.toString(),
 	});
 
-	if (!response.ok) {
-		const errorText = await response.text();
+	if (response.status !== 200) {
+		const errorText = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 		throw new Error(`Token acquisition failed (${response.status}): ${errorText}`);
 	}
 
-	const data = (await response.json()) as { access_token: string; expires_in: number };
+	const data = response.data as { access_token: string; expires_in: number };
 
 	tokenCache = {
 		accessToken: data.access_token,
@@ -43,20 +45,20 @@ export async function sendMailViaGraph(config: MsGraphConfig, message: GraphMess
 
 	const endpoint = `https://graph.microsoft.com/v1.0/users/${encodeURIComponent(config.senderEmail)}/sendMail`;
 
-	const response = await fetch(endpoint, {
+	const response = await request(endpoint, {
 		method: 'POST',
 		headers: {
 			Authorization: `Bearer ${accessToken}`,
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({
+		body: {
 			message,
 			saveToSentItems,
-		}),
+		},
 	});
 
-	if (!response.ok) {
-		const errorBody = await response.text();
+	if (response.status !== 202 && response.status !== 200) {
+		const errorBody = typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
 		throw new Error(`Graph API sendMail failed (${response.status}): ${errorBody}`);
 	}
 }

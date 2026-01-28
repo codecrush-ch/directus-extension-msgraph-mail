@@ -1,5 +1,4 @@
-import { readFile } from 'fs/promises';
-import type { DirectusEmailOptions, GraphMessage, GraphRecipient, GraphAttachment, DirectusAttachment } from './types';
+import type { DirectusAttachment, DirectusEmailOptions, GraphAttachment, GraphMessage, GraphRecipient } from './types';
 
 export function parseRecipients(input: string | string[] | undefined): GraphRecipient[] {
 	if (!input) return [];
@@ -33,8 +32,9 @@ async function convertAttachments(attachments?: DirectusAttachment[]): Promise<G
 				contentBytes = Buffer.from(att.content, (att.encoding as BufferEncoding) || 'utf-8').toString('base64');
 			}
 		} else if (att.path) {
-			const fileBuffer = await readFile(att.path);
-			contentBytes = fileBuffer.toString('base64');
+			// File system access is not available in sandboxed mode
+			// Attachments must be provided via the content property
+			throw new Error(`Attachment "${att.filename}" uses file path, which is not supported in sandboxed mode. Please provide attachment content directly.`);
 		} else {
 			contentBytes = '';
 		}

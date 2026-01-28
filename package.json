@@ -27,7 +27,19 @@
 		"type": "bundle",
 		"host": "^10.10.0",
 		"sandbox": {
-			"enabled": true
+			"enabled": true,
+			"requestedScopes": {
+				"request": {
+					"methods": [
+						"POST"
+					],
+					"urls": [
+						"https://login.microsoftonline.com/*",
+						"https://graph.microsoft.com/*"
+					]
+				},
+				"log": {}
+			}
 		},
 		"path": {
 			"api": "dist/api.js",
