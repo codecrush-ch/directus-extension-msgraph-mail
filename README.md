@@ -15,10 +15,19 @@ Send all Directus emails via Microsoft Graph API using OAuth2 Client Credentials
 
 ### Via Directus Marketplace (Recommended)
 
-1. Open your Directus instance
-2. Navigate to **Settings** → **Marketplace**
-3. Search for "Microsoft Graph Mail"
-4. Click **Install**
+**Important:** This extension uses the Directus sandbox for security. To see it in the Marketplace, you need to configure your Directus instance:
+
+1. Add the following environment variable to your Directus `.env` file:
+   ```bash
+   MARKETPLACE_TRUST=all
+   ```
+2. Restart your Directus instance
+3. Open your Directus instance
+4. Navigate to **Settings** → **Marketplace**
+5. Search for "Microsoft Graph Mail"
+6. Click **Install**
+
+**Note:** The `MARKETPLACE_TRUST=all` setting allows installation of sandboxed extensions from the Marketplace. This extension runs in a secure sandbox and only has access to the Microsoft Graph API endpoints it needs.
 
 ### Via NPM
 
