@@ -1,33 +1,18 @@
 # Directus Extension: Microsoft Graph Mail
 
-Send all Directus emails via Microsoft Graph API using OAuth2 Client Credentials flow. This extension replaces the default Directus email transport with Microsoft Graph API, enabling seamless integration with Microsoft 365 / Azure AD.
+Send all Directus emails via Microsoft Graph API using OAuth2 Client Credentials flow. This extension replaces the default Directus email transport with Microsoft Graph API, enabling seamless integration with Microsoft 365 / Azure AD — including full support for Directus Liquid mail templates (password reset, invitations, custom templates).
 
 ## Features
 
 - 🔐 **OAuth2 Client Credentials Flow** - Secure authentication using Azure AD App Registration
 - 📧 **Automatic Email Interception** - All Directus emails are automatically sent via Microsoft Graph
+- 🧩 **Liquid Template Rendering** - Renders Directus' built-in mail templates (password reset, user invitation, etc.) plus your own custom templates with the same `{{ projectName }}`, `{{ projectLogo }}`, `{{ projectColor }}` and `{{ projectUrl }}` defaults Directus provides out of the box
 - 🎯 **Manual Email Operation** - Includes a Directus Flow operation for sending emails programmatically
 - 🔄 **Token Caching** - Automatic token refresh with 5-minute buffer
-- 📝 **Rich Email Support** - HTML and plain text emails with CC/BCC support
+- 📝 **Rich Email Support** - HTML and plain text emails with CC/BCC and attachments
 - ⚡ **Zero Configuration** - Works automatically once environment variables are set
 
 ## Installation
-
-### Via Directus Marketplace (Recommended)
-
-**Important:** This extension uses the Directus sandbox for security. To see it in the Marketplace, you need to configure your Directus instance:
-
-1. Add the following environment variable to your Directus `.env` file:
-   ```bash
-   MARKETPLACE_TRUST=all
-   ```
-2. Restart your Directus instance
-3. Open your Directus instance
-4. Navigate to **Settings** → **Marketplace**
-5. Search for "Microsoft Graph Mail"
-6. Click **Install**
-
-**Note:** The `MARKETPLACE_TRUST=all` setting allows installation of sandboxed extensions from the Marketplace. This extension runs in a secure sandbox and only has access to the Microsoft Graph API endpoints it needs.
 
 ### Via NPM
 
@@ -40,6 +25,8 @@ npm install directus-extension-msgraph-mail
 1. Download the latest release
 2. Extract to your Directus `extensions` folder
 3. Restart Directus
+
+> **Note on sandbox mode:** Starting with `1.0.4` this extension runs **outside** the Directus sandbox. The sandbox does not allow access to `node:fs` / `node:module`, both of which are required to locate and render Directus' built-in Liquid mail templates. Because the extension is no longer sandboxed, it is not eligible for Marketplace distribution and must be installed via NPM or manually. Network and filesystem access is limited to what is needed for token acquisition, the Graph API and the local mail templates folder.
 
 ## Configuration
 
@@ -72,6 +59,10 @@ MSGRAPH_SENDER_EMAIL=noreply@yourdomain.com
 
 # Optional: Fallback sender email (used if MSGRAPH_SENDER_EMAIL is not set)
 EMAIL_FROM=noreply@yourdomain.com
+
+# Optional: Custom directory with additional Liquid mail templates (.liquid)
+# Defaults to Directus' built-in templates folder if not set.
+EMAIL_TEMPLATES_PATH=/directus/templates
 ```
 
 ### 3. Restart Directus
@@ -96,16 +87,37 @@ Once configured, all Directus emails are automatically sent via Microsoft Graph 
 - Password reset emails
 - User invitations
 - Notification emails
-- Custom emails sent via `mail` service
+- Custom emails sent via the `mail` service
 
-No additional configuration required!
+No additional configuration required.
+
+### Liquid Mail Templates
+
+Directus core uses Liquid templates for transactional emails (e.g. `password-reset.liquid`, `user-invitation.liquid`). When an email is sent with `template` instead of `html`, this extension renders the template before delivery and injects the same defaults Directus provides:
+
+| Variable          | Source                                              |
+| ----------------- | --------------------------------------------------- |
+| `projectName`     | `directus_settings.project_name` (fallback `Directus`) |
+| `projectColor`    | `directus_settings.project_color` (fallback `#171717`) |
+| `projectLogo`     | `directus_settings.project_logo` resolved against `PUBLIC_URL`, otherwise `admin/img/directus-white.png` |
+| `projectUrl`      | `directus_settings.project_url`                     |
+
+Template lookup order:
+
+1. `EMAIL_TEMPLATES_PATH` (if set and the file exists)
+2. The `dist/services/mail/templates` folder shipped with `@directus/api` / `directus`
+   - Resolved via `require.resolve`
+   - Falls back to common locations (`/directus/node_modules/...`, `process.cwd()/node_modules/...`)
+   - Also scans `node_modules/.pnpm/@directus+api@*` for pnpm-based installs
+
+Drop your custom `.liquid` files into `EMAIL_TEMPLATES_PATH` to override or add templates.
 
 ### Manual Email Sending (Flow Operation)
 
-Use the **Microsoft Graph: Send Mail** operation in Directus Flows:
+Use the **Microsoft Graph: Send Email** operation in Directus Flows.
 
 **Operation Settings:**
-- **To**: Recipient email(s) - string or array
+- **To**: Recipient email(s) — string or array
 - **CC**: CC recipients (optional)
 - **BCC**: BCC recipients (optional)
 - **Subject**: Email subject
@@ -114,7 +126,7 @@ Use the **Microsoft Graph: Send Mail** operation in Directus Flows:
 - **Importance**: `low`, `normal`, or `high` (default: `normal`)
 - **Save to Sent Items**: Boolean (default: `true`)
 
-**Example Flow:**
+**Example Flow payload:**
 
 ```json
 {
@@ -154,6 +166,13 @@ docker logs directus_backend
 4. **Check logs:**
    Look for `[msgraph-mail]` entries in Directus logs
 
+### Template-based emails (password reset, invitations) fail
+
+If you see an error like *"Could not locate built-in Directus mail templates"* in the logs:
+
+- Make sure the extension can reach `@directus/api`'s `dist/services/mail/templates` folder. In Docker images this is usually `/directus/node_modules/@directus/api/dist/services/mail/templates`.
+- As a workaround you can set `EMAIL_TEMPLATES_PATH` to a folder containing copies of the required `.liquid` files (e.g. `password-reset.liquid`, `user-invitation.liquid`).
+
 ### Token acquisition fails
 
 - Verify `MSGRAPH_TENANT_ID`, `MSGRAPH_CLIENT_ID`, and `MSGRAPH_CLIENT_SECRET` are correct
@@ -164,7 +183,7 @@ docker logs directus_backend
 
 ### Hook (Automatic Email Interception)
 
-The extension registers a `email.send` filter hook that intercepts all outgoing emails and sends them via Microsoft Graph API instead of the default SMTP transport.
+The extension registers an `email.send` filter hook that intercepts all outgoing emails. If a `template` is provided (and no `html`), the template is rendered with LiquidJS using project defaults plus the custom data from the caller. The result is then sent via Microsoft Graph API instead of the default SMTP transport.
 
 ### Operation (Manual Email Sending)
 
@@ -179,20 +198,31 @@ The extension automatically acquires and caches OAuth2 access tokens. Tokens are
 - Directus `^10.10.0`
 - Microsoft 365 / Azure AD tenant
 - Azure AD App Registration with `Mail.Send` permission
+- Non-sandboxed extension execution (default for self-hosted Directus instances)
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details
+MIT License — see [LICENSE](LICENSE) file for details
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request on [GitHub](https://github.com/codecrush-ch/directus-extension-msgraph-mail).
+Contributions are welcome. Please open an issue or submit a pull request on [GitHub](https://github.com/codecrush-ch/directus-extension-msgraph-mail).
 
 ## Support
 
 - 🐛 [Report a bug](https://github.com/codecrush-ch/directus-extension-msgraph-mail/issues)
 - 💡 [Request a feature](https://github.com/codecrush-ch/directus-extension-msgraph-mail/issues)
 - 📖 [Documentation](https://github.com/codecrush-ch/directus-extension-msgraph-mail#readme)
+
+## Changelog
+
+### 1.0.4
+
+- Switched HTTP transport from sandboxed `directus:api` `request` to native `fetch`
+- Added Liquid mail template rendering with the same project defaults Directus uses (`projectName`, `projectLogo`, `projectColor`, `projectUrl`)
+- Auto-discovery of Directus' built-in templates folder, with optional `EMAIL_TEMPLATES_PATH` override
+- Sandbox mode disabled to allow filesystem access for templates
+- Added `liquidjs` runtime dependency
 
 ## Author
 

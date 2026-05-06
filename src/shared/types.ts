@@ -14,6 +14,17 @@ export interface DirectusEmailOptions {
 	html?: string;
 	text?: string;
 	attachments?: DirectusAttachment[];
+	template?: {
+		name: string;
+		data: Record<string, unknown>;
+	};
+}
+
+export interface DefaultTemplateData {
+	projectName: string;
+	projectColor: string;
+	projectLogo: string;
+	projectUrl: string;
 }
 
 export interface DirectusAttachment {

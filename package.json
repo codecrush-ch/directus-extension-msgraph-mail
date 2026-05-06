@@ -1,7 +1,7 @@
 {
 	"name": "directus-extension-msgraph-mail",
-	"version": "1.0.3",
-	"description": "Send all Directus emails via Microsoft Graph API with OAuth2 Client Credentials",
+	"version": "1.0.4",
+	"description": "Send all Directus emails via Microsoft Graph API with OAuth2 Client Credentials, including full Liquid template support",
 	"keywords": [
 		"directus",
 		"directus-extension",
@@ -27,19 +27,7 @@
 		"type": "bundle",
 		"host": "^10.10.0",
 		"sandbox": {
-			"enabled": true,
-			"requestedScopes": {
-				"request": {
-					"methods": [
-						"POST"
-					],
-					"urls": [
-						"https://login.microsoftonline.com/*",
-						"https://graph.microsoft.com/*"
-					]
-				},
-				"log": {}
-			}
+			"enabled": false
 		},
 		"path": {
 			"api": "dist/api.js",
@@ -62,13 +50,16 @@
 		]
 	},
 	"scripts": {
-		"build": "directus-extension build",
+		"build": "directus-extension build --no-minify",
 		"dev": "directus-extension build -w --no-minify",
 		"prepublishOnly": "npm run build"
 	},
 	"devDependencies": {
 		"@directus/extensions-sdk": "^12.0.0",
 		"typescript": "^5.4.0"
+	},
+	"dependencies": {
+		"liquidjs": "^10.25.7"
 	},
 	"files": [
 		"dist"
