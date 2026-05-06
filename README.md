@@ -195,7 +195,7 @@ The extension automatically acquires and caches OAuth2 access tokens. Tokens are
 
 ## Requirements
 
-- Directus `^10.10.0`
+- Directus `^10.10.0` or `^11.0.0`
 - Microsoft 365 / Azure AD tenant
 - Azure AD App Registration with `Mail.Send` permission
 - Non-sandboxed extension execution (default for self-hosted Directus instances)
@@ -215,6 +215,12 @@ Contributions are welcome. Please open an issue or submit a pull request on [Git
 - 📖 [Documentation](https://github.com/codecrush-ch/directus-extension-msgraph-mail#readme)
 
 ## Changelog
+
+### 1.0.5
+
+- Added official compatibility with **Directus 11** (host range now `^10.10.0 || ^11.0.0`)
+- Bumped `@directus/extensions-sdk` to `^17.0.0`
+- Verified that the template auto-discovery still resolves `@directus/api`'s `dist/services/mail/templates` folder under Directus 11 (`@directus/api@35.x`)
 
 ### 1.0.4
 
